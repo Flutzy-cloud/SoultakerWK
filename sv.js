@@ -21,12 +21,59 @@ app.get('/api/characters', async (req, res) => {
   }
 });
 
+// C - CREATE: Agregar un nuevo personaje
+app.post('/api/characters', async (req, res) => {
+  const { name, minder, avatar_url, sector, description } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO characters (name, minder, avatar_url, sector, description) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [name, minder, avatar_url, sector, description]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error("Error SQL:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// R - READ: leer los personajes
+
 app.get('/api/characters/:id', async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('SELECT * FROM characters WHERE id = $1', [id]);
     if (result.rows.length === 0) return res.status(404).send('No encontrado');
     res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error SQL:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// U - UPDATE: Actualizar un personaje existente
+app.put('/api/characters/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, minder, avatar_url, sector, description } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE characters SET name = $1, minder = $2, avatar_url = $3, sector = $4, description = $5 WHERE id = $6 RETURNING *',
+      [name, minder, avatar_url, sector, description, id]
+    );
+    if (result.rows.length === 0) return res.status(404).send('No encontrado');
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error SQL:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// D - DELETE: Eliminar un personaje
+app.delete('/api/characters/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM characters WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) return res.status(404).send('No encontrado');
+    res.json({ message: 'Personaje eliminado exitosamente' });
   } catch (err) {
     console.error("Error SQL:", err);
     res.status(500).json({ error: err.message });
